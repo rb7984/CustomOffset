@@ -1,0 +1,194 @@
+{
+  "version": 3,
+  "targets": {
+    ".NETFramework,Version=v4.8": {
+      "Grasshopper/7.0.20314.3001": {
+        "type": "package",
+        "dependencies": {
+          "RhinoCommon": "[7.0.20314.3001]"
+        },
+        "compile": {
+          "lib/net45/GH_IO.dll": {
+            "related": ".XML"
+          },
+          "lib/net45/Grasshopper.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/net45/_._": {
+            "related": ".XML"
+          }
+        },
+        "build": {
+          "build/Grasshopper.targets": {}
+        }
+      },
+      "RhinoCommon/7.0.20314.3001": {
+        "type": "package",
+        "compile": {
+          "lib/net45/Eto.dll": {
+            "related": ".xml"
+          },
+          "lib/net45/Rhino.UI.dll": {},
+          "lib/net45/RhinoCommon.dll": {
+            "related": ".XML"
+          }
+        },
+        "runtime": {
+          "lib/net45/_._": {
+            "related": ".xml"
+          }
+        },
+        "build": {
+          "build/RhinoCommon.targets": {}
+        }
+      }
+    },
+    "net7.0": {},
+    "net7.0-windows7.0": {}
+  },
+  "libraries": {
+    "Grasshopper/7.0.20314.3001": {
+      "sha512": "8/NnsEbu2sC45ndvXWwvzu7rzj02GHd3/GoPCtHcD6r2iLAIR2xefuyoKt7mpsKra3AQDPMAHoVEA7MYZo2Ecw==",
+      "type": "package",
+      "path": "grasshopper/7.0.20314.3001",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "build/Grasshopper.targets",
+        "grasshopper.7.0.20314.3001.nupkg.sha512",
+        "grasshopper.nuspec",
+        "grasshopper.png",
+        "lib/net45/GH_IO.XML",
+        "lib/net45/GH_IO.dll",
+        "lib/net45/Grasshopper.dll",
+        "lib/net45/Grasshopper.xml"
+      ]
+    },
+    "RhinoCommon/7.0.20314.3001": {
+      "sha512": "uB4NfLaKkQYDLrwfw2YdERr1srOqigPO3d9QoQ5YwkcGB8rDdNhfNwQPW0alNJfTn0n77yGR0S+FSBgXNOfDhw==",
+      "type": "package",
+      "path": "rhinocommon/7.0.20314.3001",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "Eto-LICENSE.txt",
+        "build/RhinoCommon.targets",
+        "lib/net45/Eto.dll",
+        "lib/net45/Eto.xml",
+        "lib/net45/Rhino.UI.dll",
+        "lib/net45/RhinoCommon.XML",
+        "lib/net45/RhinoCommon.dll",
+        "rhinocommon.7.0.20314.3001.nupkg.sha512",
+        "rhinocommon.nuspec",
+        "rhinocommon.png"
+      ]
+    }
+  },
+  "projectFileDependencyGroups": {
+    ".NETFramework,Version=v4.8": [
+      "Grasshopper >= 7.0.20314.3001"
+    ],
+    "net7.0": [],
+    "net7.0-windows7.0": []
+  },
+  "packageFolders": {
+    "C:\\Users\\riccardo\\.nuget\\packages\\": {},
+    "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
+  },
+  "project": {
+    "version": "1.0.0",
+    "restore": {
+      "projectUniqueName": "C:\\Users\\riccardo\\source\\repos\\GH\\CustomOffset\\CustomOffset\\CustomOffset\\CustomOffset.csproj",
+      "projectName": "CustomOffset",
+      "projectPath": "C:\\Users\\riccardo\\source\\repos\\GH\\CustomOffset\\CustomOffset\\CustomOffset\\CustomOffset.csproj",
+      "packagesPath": "C:\\Users\\riccardo\\.nuget\\packages\\",
+      "outputPath": "C:\\Users\\riccardo\\source\\repos\\GH\\CustomOffset\\CustomOffset\\CustomOffset\\obj\\",
+      "projectStyle": "PackageReference",
+      "crossTargeting": true,
+      "fallbackFolders": [
+        "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+      ],
+      "configFilePaths": [
+        "C:\\Users\\riccardo\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+        "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+      ],
+      "originalTargetFrameworks": [
+        "net48",
+        "net7.0",
+        "net7.0-windows"
+      ],
+      "sources": {
+        "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
+        "https://api.nuget.org/v3/index.json": {}
+      },
+      "frameworks": {
+        "net7.0": {
+          "targetAlias": "net7.0",
+          "projectReferences": {}
+        },
+        "net7.0-windows7.0": {
+          "targetAlias": "net7.0-windows",
+          "projectReferences": {}
+        },
+        "net48": {
+          "targetAlias": "net48",
+          "projectReferences": {}
+        }
+      },
+      "warningProperties": {
+        "noWarn": [
+          "NU1701"
+        ],
+        "warnAsError": [
+          "NU1605"
+        ]
+      }
+    },
+    "frameworks": {
+      "net7.0": {
+        "targetAlias": "net7.0",
+        "imports": [
+          "net461",
+          "net462",
+          "net47",
+          "net471",
+          "net472",
+          "net48",
+          "net481"
+        ],
+        "assetTargetFallback": true,
+        "warn": true,
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\6.0.402\\RuntimeIdentifierGraph.json"
+      },
+      "net7.0-windows7.0": {
+        "targetAlias": "net7.0-windows",
+        "imports": [
+          "net461",
+          "net462",
+          "net47",
+          "net471",
+          "net472",
+          "net48",
+          "net481"
+        ],
+        "assetTargetFallback": true,
+        "warn": true,
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\6.0.402\\RuntimeIdentifierGraph.json"
+      },
+      "net48": {
+        "targetAlias": "net48",
+        "dependencies": {
+          "Grasshopper": {
+            "include": "Compile, Build, Native, ContentFiles, Analyzers, BuildTransitive",
+            "target": "Package",
+            "version": "[7.0.20314.3001, )"
+          }
+        },
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\6.0.402\\RuntimeIdentifierGraph.json"
+      }
+    }
+  }
+}
