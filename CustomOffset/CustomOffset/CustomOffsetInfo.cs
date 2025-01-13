@@ -18,7 +18,7 @@ namespace CustomOffset
         public override Guid Id => new Guid("161EC7C4-7061-4B03-B2B5-3272B5F09EF4");
 
         //Return a string identifying you or your company.
-        public override string AuthorName => "";
+        public override string AuthorName => "RB";
 
         //Return a string representing your preferred contact details.
         public override string AuthorContact => "";
