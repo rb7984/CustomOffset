@@ -5,11 +5,24 @@ using Rhino;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Diagnostics;
+using Grasshopper.GUI.Canvas;
+using Grasshopper.Kernel.Attributes;
 
 namespace CustomOffset
 {
     public class CustomOffsetComponent : GH_Component
     {
+        // public override void Render(IGH_PreviewArgs args)
+        //{
+        //    // Imposta il colore di sfondo
+        //    args.Display.ClearScene();
+        //    args.Display.DisplayPipelineAttributes.BackgroundColor = System.Drawing.Color.LightBlue; // Scegli il colore
+
+        //    // Chiamare il metodo base per disegnare il resto del componente
+        //    base.Render(args);
+        //}
+
         /// <summary>
         /// Each implementation of GH_Component must provide a public 
         /// constructor without any arguments.
@@ -49,6 +62,8 @@ namespace CustomOffset
         protected override void SolveInstance(IGH_DataAccess DA)
         {
             Brep brep = null;
+
+            Debug.WriteLine("I'm alive");
 
             // Use the DA object to retrieve the data inside the first input parameter.
             if (!DA.GetData(0, ref brep)) { return; }
@@ -246,4 +261,30 @@ namespace CustomOffset
             return angleRad;
         }
     }
+
+    //public class CustomAttributes : GH_ComponentAttributes
+    //{
+    //    public CustomAttributes(IGH_Component component)
+    //      : base(component)
+    //    { }
+
+    //    protected override void Render(GH_Canvas canvas, Graphics graphics, GH_CanvasChannel channel)
+    //    {
+    //        if (channel == GH_CanvasChannel.Objects)
+    //        {
+    //            // Cache the existing style.
+    //            GH_PaletteStyle style = GH_Skin.palette_normal_standard;
+
+    //            // Swap out palette for normal, unselected components.
+    //            GH_Skin.palette_normal_standard = new GH_PaletteStyle(Color.DeepPink, Color.Teal, Color.PapayaWhip);
+
+    //            base.Render(canvas, graphics, channel);
+
+    //            // Put the original style back.
+    //            GH_Skin.palette_normal_standard = style;
+    //        }
+    //        else
+    //            base.Render(canvas, graphics, channel);
+    //    }
+    //}
 }

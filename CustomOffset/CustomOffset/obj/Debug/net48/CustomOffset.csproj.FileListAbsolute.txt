@@ -1,3 +1,4 @@
+C:\Users\riccardo\source\repos\GH\CustomOffset\CustomOffset\CustomOffset\bin\Debug\net48\CustomOffset.gha.config
 C:\Users\riccardo\source\repos\GH\CustomOffset\CustomOffset\CustomOffset\bin\Debug\net48\CustomOffset.gha
 C:\Users\riccardo\source\repos\GH\CustomOffset\CustomOffset\CustomOffset\bin\Debug\net48\CustomOffset.pdb
 C:\Users\riccardo\source\repos\GH\CustomOffset\CustomOffset\CustomOffset\obj\Debug\net48\CustomOffset.csproj.AssemblyReference.cache
