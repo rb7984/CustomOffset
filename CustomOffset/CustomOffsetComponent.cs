@@ -63,8 +63,6 @@ namespace CustomOffset
         {
             Brep brep = null;
 
-            Debug.WriteLine("I'm alive");
-
             // Use the DA object to retrieve the data inside the first input parameter.
             if (!DA.GetData(0, ref brep)) { return; }
             if (!brep.IsValid) { return; }
@@ -108,6 +106,10 @@ namespace CustomOffset
         {
             Dictionary<BrepFace, double> d = new Dictionary<BrepFace, double>();
 
+            if (offsets.Count < buildingBody.Faces.Count)
+            {
+                offsets.AddRange(Enumerable.Repeat(offsets[offsets.Count - 1], buildingBody.Faces.Count - offsets.Count).ToList());
+            }
 
             buildingBody.Faces.ToList().ForEach(face => d.Add(face, offsets[face.FaceIndex]));
             return d;

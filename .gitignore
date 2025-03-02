@@ -1,0 +1,12 @@
+.vs/
+CustomOffset/bin/
+CustomOffset/obj/
+
+*.ico
+*.dll
+*.exe
+*.rhp
+
+*.futdcache.vs
+*.suo
+*.pdb
