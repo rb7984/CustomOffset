@@ -119,9 +119,11 @@ namespace CustomOffset
         {
             List<Brep> offsetFaces = new List<Brep>();
 
-            // for each face the edges have a Vector3 associated representing the offset
+            // for each face the edges have a Vector3d associated representing the offset
             // based on the angle between the 2 faces
             Dictionary<int, Dictionary<BrepEdge, Vector3d>> faceEdgeVectors = new Dictionary<int, Dictionary<BrepEdge, Vector3d>>();
+            Dictionary<int, Dictionary<BrepEdge, double>> faceEdgeVectors2 = new Dictionary<int, Dictionary<BrepEdge, double>>();
+            Dictionary<int, Dictionary<int, double>> faceVertexAngles = CalculatePlanarAngle(buildingBody);
 
             // Populate for each edge for each face the offset Vector
             foreach (BrepFace face in facesOffsetDictionary.Keys)
@@ -130,6 +132,7 @@ namespace CustomOffset
                 List<BrepEdge> surroundingEdges = buildingBody.Edges.Where(e => edgesIndex.Contains(e.EdgeIndex)).ToList();
 
                 faceEdgeVectors[face.FaceIndex] = new Dictionary<BrepEdge, Vector3d>();
+                faceEdgeVectors2[face.FaceIndex] = new Dictionary<BrepEdge, double>();
 
                 foreach (BrepEdge edge in surroundingEdges)
                 {
@@ -147,10 +150,8 @@ namespace CustomOffset
                     double parameter;
                     line.ClosestPoint(face.GetBoundingBox(true).Center, out parameter);
 
-                    Vector3d scalingVector = line.PointAt(parameter) - face.GetBoundingBox(true).Center;
-
-                    scalingVector.Unitize();
-                    double angle = AngleRadCalculator(face, neighbourFace[0]) - 0.5 * Math.PI;
+                    Vector3d scalingVector;
+                    double angle = CalculateDihedralAngle(face, edge, neighbourFace[0], out scalingVector) - 0.5 * Math.PI;
 
                     var scalingFactor =
                         facesOffsetDictionary[neighbourFace[0]] / Math.Cos(angle) -
@@ -159,6 +160,7 @@ namespace CustomOffset
                     scalingVector *= scalingFactor;
 
                     faceEdgeVectors[face.FaceIndex][edge] = scalingVector;
+                    faceEdgeVectors2[face.FaceIndex][edge] = scalingFactor;
                 }
             }
 
@@ -172,6 +174,9 @@ namespace CustomOffset
 
                 var faceVectorMap = new Dictionary<BrepEdge, Vector3d>();
                 faceEdgeVectors.TryGetValue(face.FaceIndex, out faceVectorMap);
+
+                var faceVectorMap2 = new Dictionary<BrepEdge, double>();
+                faceEdgeVectors2.TryGetValue(face.FaceIndex, out faceVectorMap2);
 
                 foreach (BrepEdge brepEdge in surroundingEdges)
                 {
@@ -191,51 +196,32 @@ namespace CustomOffset
                     )
                         ).ToList();
 
-                    List<BrepFace> commonFaces = buildingBody.Faces.Where(f => brepEdge.AdjacentFaces().Contains(f.FaceIndex)).ToList();
-                    var commonFace = commonFaces.Where(f => f != face);
-
-                    List<BrepFace> startFaces = buildingBody.Faces.Where(f => startAdjacentEdge[0].AdjacentFaces().Contains(f.FaceIndex)).ToList();
-                    var startFace = startFaces.Where(f => f != face);
                     Point3d endOfStartAdjacentEdge = (startAdjacentEdge[0].PointAtStart.DistanceTo(brepEdge.PointAtStart) < RhinoDoc.ActiveDoc.ModelAbsoluteTolerance) ? startAdjacentEdge[0].PointAtEnd : startAdjacentEdge[0].PointAtStart;
                     Vector3d orientedVectorForStartCalculation = endOfStartAdjacentEdge - brepEdge.PointAtStart;
-                    double startCorrectingAngle2 = Vector3d.VectorAngle(brepEdge.TangentAt(0.5), orientedVectorForStartCalculation) - 0.5 * Math.PI;
+                    double startCorrectingAngle2 = faceVertexAngles[face.FaceIndex][brepEdge.StartVertex.VertexIndex] - .5 * Math.PI;
 
-                    List<BrepFace> endFaces = buildingBody.Faces.Where(f => endAdjacentEdge[0].AdjacentFaces().Contains(f.FaceIndex)).ToList();
-                    var endFace = endFaces.Where(f => f != face);
                     Point3d endOfEndAdjacentEdge = (endAdjacentEdge[0].PointAtStart.DistanceTo(brepEdge.PointAtEnd) < RhinoDoc.ActiveDoc.ModelAbsoluteTolerance) ? endAdjacentEdge[0].PointAtEnd : endAdjacentEdge[0].PointAtStart;
                     Vector3d orientedVectorForEndCalculation = endOfEndAdjacentEdge - brepEdge.PointAtEnd;
-                    double endCorrectingAngle2 = Vector3d.VectorAngle(brepEdge.PointAtStart - brepEdge.PointAtEnd, orientedVectorForEndCalculation) - 0.5 * Math.PI;
+                    double endCorrectingAngle2 = faceVertexAngles[face.FaceIndex][brepEdge.EndVertex.VertexIndex] - 0.5 * Math.PI;
 
-                    Vector3d startVector = faceVectorMap.TryGetValue(startAdjacentEdge[0], out var vector0) ? vector0 : Vector3d.Unset;
+                    double startVector2 = faceVectorMap2.TryGetValue(startAdjacentEdge[0], out var double0) ? double0 : 0;
+                    double startAdditionalVector2 = faceVectorMap2[brepEdge] * Math.Sin(startCorrectingAngle2);
+                    double startScalingFactor2 = (startVector2 - startAdditionalVector2) / Math.Cos(startCorrectingAngle2);
 
-                    double startAdditionalVector = faceVectorMap[brepEdge].Length * Math.Tan(startCorrectingAngle2);
-                    double startAdditionalVector2 = faceVectorMap[brepEdge].Length * Math.Sin(startCorrectingAngle2);
-
-                    double startScalingFactor =
-                        (startVector.Length - startAdditionalVector2) / Math.Cos(startCorrectingAngle2);
-                    startVector.Unitize();
-                    startVector *= startScalingFactor;
-
-                    Vector3d endVector = faceVectorMap.TryGetValue(endAdjacentEdge[0], out var vector1) ? vector1 : Vector3d.Unset;
-
-                    double endAdditionalVector = faceVectorMap[brepEdge].Length * Math.Tan(endCorrectingAngle2);
-                    double endAdditionalVector2 = faceVectorMap[brepEdge].Length * Math.Sin(endCorrectingAngle2);
-
-                    double endScalingFactor =
-                        (endVector.Length - endAdditionalVector2) / Math.Cos(endCorrectingAngle2);
-                    endVector.Unitize();
-                    endVector *= endScalingFactor;
+                    double endVector2 = faceVectorMap2.TryGetValue(endAdjacentEdge[0], out var double1) ? double1 : 0;
+                    double endAdditionalVector2 = faceVectorMap2[brepEdge] * Math.Sin(endCorrectingAngle2);
+                    double endScalingFactor2 = (endVector2 - endAdditionalVector2) / Math.Cos(endCorrectingAngle2);
 
                     Curve curve = brepEdge.DuplicateCurve();
 
-                    curve.Transform(Transform.Scale(curve.PointAtStart, (curve.GetLength() + endVector.Length) / curve.GetLength()));
-                    curve.Transform(Transform.Scale(curve.PointAtEnd, (curve.GetLength() + startVector.Length) / curve.GetLength()));
+                    curve.Transform(Transform.Scale(curve.PointAtStart, (curve.GetLength() + endScalingFactor2) / curve.GetLength()));
+                    curve.Transform(Transform.Scale(curve.PointAtEnd, (curve.GetLength() + startScalingFactor2) / curve.GetLength()));
 
                     Vector3d offsetVector1 = face.NormalAt(0.5, 0.5);
                     offsetVector1.Unitize();
                     offsetVector1 *= facesOffsetDictionary[face];
-                    curve.Translate(offsetVector1);
 
+                    curve.Translate(offsetVector1);
                     curve.Translate(faceVectorMap[brepEdge]);
 
                     edgesToBeStretched.Add(curve);
@@ -251,42 +237,162 @@ namespace CustomOffset
             return offsetCube;
         }
 
-        public double AngleRadCalculator(BrepFace b1, BrepFace b2)
+        public double CalculateDihedralAngle(BrepFace face, BrepEdge edge, BrepFace adjacentFace, out Vector3d scalingVector)
         {
-            Vector3d v1, v2;
-            v1 = b1.NormalAt(0.5, 0.5);
-            v2 = b2.NormalAt(0.5, 0.5);
+            Vector3d faceNormal = face.NormalAt(0.5, 0.5);
+            Vector3d adjacentFaceNormal = adjacentFace.NormalAt(0.5, 0.5);
 
-            double angleRad = Math.Abs(Vector3d.VectorAngle(v1, v2) - Math.PI);
-            double angleDegrees = RhinoMath.ToDegrees(angleRad);
+            var loop = face.OuterLoop;
+            Curve loopasacurve = loop.To3dCurve();
+            Polyline loopasapolyline = new Polyline();
 
-            return angleRad;
+            if (loopasacurve.IsPolyline())
+            {
+                //TODO maximum length può causare dei danni?
+                loopasapolyline = loopasacurve.ToPolyline(0.1, 0.1, 0.1, 3000).ToPolyline();
+            }
+
+            loopasapolyline.MergeColinearSegments(0.1, true);
+            Line[] ll = loopasapolyline.GetSegments();
+            Line line = new Line();
+
+            double distance = 100;
+            int counter = 0;
+            while (distance > 1)
+            {
+                double t;
+                if (edge.ClosestPoint(ll[counter].PointAt(0.5), out t))
+                {
+                    distance = edge.PointAt(t).DistanceTo(ll[counter].PointAt(0.5));
+                    line = ll[counter];
+                    counter++;
+                }
+            }
+
+            Vector3d testEdgeVector = line.Direction;
+            testEdgeVector.Unitize();
+
+            Vector3d rotatedFaceNormal = new Vector3d(faceNormal);
+            rotatedFaceNormal.Rotate(Math.PI / 2, testEdgeVector);
+
+            double rotatedDotProduct = Vector3d.Multiply(rotatedFaceNormal, adjacentFaceNormal);
+
+            faceNormal.Unitize();
+            adjacentFaceNormal.Unitize();
+
+            double angle = Vector3d.VectorAngle(faceNormal, adjacentFaceNormal);
+
+            if (rotatedDotProduct > 0)
+            {
+                angle = Math.PI - angle;
+            }
+            else
+            {
+                angle = Math.PI + angle;
+            }
+
+            scalingVector = Vector3d.CrossProduct(testEdgeVector, faceNormal);
+            scalingVector.Unitize();
+
+            return angle;
+        }
+
+        public Dictionary<int, Dictionary<int, double>> CalculatePlanarAngle(Brep body)
+        {
+            Dictionary<int, Dictionary<int, double>> faceVertexAngles = new Dictionary<int, Dictionary<int, double>>();
+
+            if (body == null || body.Faces.Count == 0)
+            {
+                return null;
+            }
+
+            foreach (BrepFace face in body.Faces)
+                if (!face.IsPlanar())
+                {
+                    return null;
+                }
+
+            foreach (BrepFace face in body.Faces)
+            {
+                faceVertexAngles[face.FaceIndex] = new Dictionary<int, double>();
+
+                Vector3d faceNormal = face.NormalAt(0.5, 0.5);
+
+                var loop = face.OuterLoop;
+                Curve loopasacurve = loop.To3dCurve();
+                Polyline loopasapolyline = new Polyline();
+
+                if (loopasacurve.IsPolyline())
+                {
+                    loopasapolyline = loopasacurve.ToPolyline(0.1, 0.1, 0.1, loopasacurve.GetLength()).ToPolyline();
+                }
+
+                loopasapolyline.MergeColinearSegments(0.1, true);
+                Line[] ll = loopasapolyline.GetSegments();
+
+                int[] faceAdjacentEdgesIndexes = face.AdjacentEdges();
+                var faceAdjacentEdges = body.Edges.Where(e => faceAdjacentEdgesIndexes.Contains(e.EdgeIndex));
+
+                Dictionary<BrepEdge, Vector3d> edgeDirectionDictionary = new Dictionary<BrepEdge, Vector3d>();
+
+                foreach (BrepEdge edge in faceAdjacentEdges)
+                    foreach (Line l in ll)
+                    {
+                        Line line = new Line();
+
+                        double distance = 100;
+                        int maxAttempts = ll.Length;
+                        int counter = 0;
+
+                        while (distance > 1 && counter < maxAttempts)
+                        {
+                            double t;
+                            if (edge.ClosestPoint(ll[counter].PointAt(0.5), out t))
+                            {
+                                distance = edge.PointAt(t).DistanceTo(ll[counter].PointAt(0.5));
+                                line = ll[counter];
+                                counter++;
+                            }
+                        }
+
+                        Vector3d testEdgeVector = line.Direction;
+                        testEdgeVector.Unitize();
+
+                        edgeDirectionDictionary[edge] = testEdgeVector;
+                    }
+
+                foreach (BrepEdge edge in faceAdjacentEdges)
+                {
+                    BrepVertex bv = edge.StartVertex;
+                    Vector3d testVector = edge.PointAtEnd - edge.PointAtStart;
+
+                    if (testVector.IsParallelTo(edgeDirectionDictionary[edge]) > 0)
+                        bv = edge.EndVertex;
+
+                    int[] vertexAdjacentEdgesIndexes = bv.EdgeIndices();
+                    var vertexAdjacentEdges = body.Edges.Where(e => vertexAdjacentEdgesIndexes.Contains(e.EdgeIndex));
+
+                    var nextBrepEdges = vertexAdjacentEdges.Where(e => e != edge && edgeDirectionDictionary.ContainsKey(e)).ToList();
+                    if (nextBrepEdges.Count == 0)
+                    {
+                        continue;
+                    }
+                    var nextBrepEdge = nextBrepEdges[0];
+
+                    Vector3d va = -edgeDirectionDictionary[edge];
+                    Vector3d vb = edgeDirectionDictionary[nextBrepEdge];
+
+                    double angle = Vector3d.VectorAngle(va, vb);
+                    Vector3d cp = Vector3d.CrossProduct(va, vb);
+
+                    if (cp.IsParallelTo(faceNormal) == 1)
+                        angle = (Math.PI * 2) - angle;
+
+                    faceVertexAngles[face.FaceIndex][bv.VertexIndex] = angle;
+                }
+            }
+
+            return faceVertexAngles;
         }
     }
-
-    //public class CustomAttributes : GH_ComponentAttributes
-    //{
-    //    public CustomAttributes(IGH_Component component)
-    //      : base(component)
-    //    { }
-
-    //    protected override void Render(GH_Canvas canvas, Graphics graphics, GH_CanvasChannel channel)
-    //    {
-    //        if (channel == GH_CanvasChannel.Objects)
-    //        {
-    //            // Cache the existing style.
-    //            GH_PaletteStyle style = GH_Skin.palette_normal_standard;
-
-    //            // Swap out palette for normal, unselected components.
-    //            GH_Skin.palette_normal_standard = new GH_PaletteStyle(Color.DeepPink, Color.Teal, Color.PapayaWhip);
-
-    //            base.Render(canvas, graphics, channel);
-
-    //            // Put the original style back.
-    //            GH_Skin.palette_normal_standard = style;
-    //        }
-    //        else
-    //            base.Render(canvas, graphics, channel);
-    //    }
-    //}
 }
