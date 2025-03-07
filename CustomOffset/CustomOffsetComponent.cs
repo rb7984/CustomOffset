@@ -83,7 +83,13 @@ namespace CustomOffset
 
             Brep[] output = Offset(brep, facesOffsetDictionary, 0.1);
 
-            DA.SetData(0, output[0]);
+            if (output == null)
+            {
+                this.AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Some of the offset Faces do not have a closed Envelope.");
+                return;
+            }
+            else
+                DA.SetData(0, output[0]);
         }
 
         /// <summary>
@@ -223,8 +229,10 @@ namespace CustomOffset
 
                     Curve curve = brepEdge.DuplicateCurve();
 
-                    curve.Transform(Transform.Scale(curve.PointAtStart, (curve.GetLength() + endScalingFactor2) / curve.GetLength()));
-                    curve.Transform(Transform.Scale(curve.PointAtEnd, (curve.GetLength() + startScalingFactor2) / curve.GetLength()));
+                    if (!curve.Transform(Transform.Scale(curve.PointAtStart, (curve.GetLength() + endScalingFactor2) / curve.GetLength())))
+                        return null;
+                    if (!curve.Transform(Transform.Scale(curve.PointAtEnd, (curve.GetLength() + startScalingFactor2) / curve.GetLength())))
+                        return null;
 
                     Vector3d offsetVector1 = face.NormalAt(0.5, 0.5);
                     offsetVector1.Unitize();
@@ -236,7 +244,14 @@ namespace CustomOffset
                     edgesToBeStretched.Add(curve);
                 }
 
-                Brep reconstructedFace = Brep.CreatePlanarBreps(edgesToBeStretched, 0.1)[0];
+                Brep[] breps = Brep.CreatePlanarBreps(edgesToBeStretched, 0.1);
+                if (breps == null || breps.Length == 0)
+                {
+                    RhinoApp.WriteLine("Failed to create a planar Brep.");
+                    return null;
+                }
+
+                Brep reconstructedFace = breps[0];
 
                 offsetFaces.Add(reconstructedFace);
             }
