@@ -20,7 +20,7 @@
       "commandName": "Executable",
       "executablePath": "C:\\Program Files\\Rhino 7\\System\\Rhino.exe",
       "commandLineArgs": "/runscript=\"_Grasshopper\"",
-      "workingDirectory": "C:\\Users\\riccardo\\source\\repos\\GH\\CustomOffset - Container\\CustomOffset\\CustomOffset\\bin"
+      "workingDirectory": "C:\\Users\\riccardo\\source\\repos\\GH\\CustomOffset-Container\\CustomOffset\\CustomOffset\\bin"
     }
   }
 }

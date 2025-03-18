@@ -21,7 +21,7 @@
 
   <PropertyGroup>
     <UseWindowsForms>true</UseWindowsForms>
-    <BaseOutputPath>C:\Users\riccardo\source\repos\GH\CustomOffset - Container\CustomOffset\CustomOffset\bin</BaseOutputPath>
+    <BaseOutputPath>C:\Users\riccardo\source\repos\GH\CustomOffset-Container\CustomOffset\CustomOffset\bin</BaseOutputPath>
   </PropertyGroup>
 
   <ItemGroup>
