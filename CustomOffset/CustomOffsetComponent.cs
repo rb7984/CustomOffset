@@ -61,6 +61,8 @@ namespace CustomOffset
         /// to store data in output parameters.</param>
         protected override void SolveInstance(IGH_DataAccess DA)
         {
+            Debug.WriteLine("Hello World!");
+
             Brep brep = null;
 
             // Use the DA object to retrieve the data inside the first input parameter.
@@ -145,22 +147,29 @@ namespace CustomOffset
                     int[] neighbourFaces = neighbourFacesByEdge.Intersect(neighbourFacesByFace).ToArray();
 
                     List<BrepFace> neighbourFace = buildingBody.Faces.Where(f => neighbourFaces.Contains(f.FaceIndex)).ToList();
+                    if (neighbourFace.Count == 0)
+                    {
+                        faceEdgeVectors[face.FaceIndex][edge] = Vector3d.Zero;
+                        faceEdgeVectors2[face.FaceIndex][edge] = 0;
+                    }
+                    else
+                    {
+                        Curve line = edge.ToNurbsCurve();
+                        double parameter;
+                        line.ClosestPoint(face.GetBoundingBox(true).Center, out parameter);
 
-                    Curve line = edge.ToNurbsCurve();
-                    double parameter;
-                    line.ClosestPoint(face.GetBoundingBox(true).Center, out parameter);
+                        Vector3d scalingVector;
+                        double angle = CalculateDihedralAngle(face, edge, neighbourFace[0], out scalingVector) - 0.5 * Math.PI;
 
-                    Vector3d scalingVector;
-                    double angle = CalculateDihedralAngle(face, edge, neighbourFace[0], out scalingVector) - 0.5 * Math.PI;
+                        var scalingFactor =
+                            facesOffsetDictionary[neighbourFace[0]] / Math.Cos(angle) -
+                            facesOffsetDictionary[face] * Math.Tan(angle);
 
-                    var scalingFactor =
-                        facesOffsetDictionary[neighbourFace[0]] / Math.Cos(angle) -
-                        facesOffsetDictionary[face] * Math.Tan(angle);
+                        scalingVector *= scalingFactor;
 
-                    scalingVector *= scalingFactor;
-
-                    faceEdgeVectors[face.FaceIndex][edge] = scalingVector;
-                    faceEdgeVectors2[face.FaceIndex][edge] = scalingFactor;
+                        faceEdgeVectors[face.FaceIndex][edge] = scalingVector;
+                        faceEdgeVectors2[face.FaceIndex][edge] = scalingFactor;
+                    }
                 }
             }
 
@@ -226,7 +235,7 @@ namespace CustomOffset
 
                     edgesToBeStretched.Add(curve);
                 }
-
+                //CRASH when strecthing is less then the lenght of the adjacent face (Miro))
                 Brep reconstructedFace = Brep.CreatePlanarBreps(edgesToBeStretched, 0.1)[0];
 
                 offsetFaces.Add(reconstructedFace);
@@ -249,7 +258,7 @@ namespace CustomOffset
             if (loopasacurve.IsPolyline())
             {
                 //TODO maximum length può causare dei danni?
-                loopasapolyline = loopasacurve.ToPolyline(0.1, 0.1, 0.1, 3000).ToPolyline();
+                loopasapolyline = loopasacurve.ToPolyline(0.1, 0.1, 0.1, loopasacurve.GetLength()).ToPolyline();
             }
 
             loopasapolyline.MergeColinearSegments(0.1, true);
