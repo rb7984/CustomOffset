@@ -1,27 +1,24 @@
-using Grasshopper;
+using Grasshopper.GUI.SettingsControls;
 using Grasshopper.Kernel;
-using Rhino.Geometry;
+using Grasshopper.Kernel.Geometry.Delaunay;
 using Rhino;
+using Rhino.DocObjects;
+using Rhino.Geometry;
+using Rhino.UI;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Diagnostics;
-using Grasshopper.GUI.Canvas;
-using Grasshopper.Kernel.Attributes;
+using System.Drawing;
+using System.Linq;
 
 namespace CustomOffset
 {
     public class CustomOffsetComponent : GH_Component
     {
-        // public override void Render(IGH_PreviewArgs args)
-        //{
-        //    // Imposta il colore di sfondo
-        //    args.Display.ClearScene();
-        //    args.Display.DisplayPipelineAttributes.BackgroundColor = System.Drawing.Color.LightBlue; // Scegli il colore
-
-        //    // Chiamare il metodo base per disegnare il resto del componente
-        //    base.Render(args);
-        //}
+        // fields
+        private List<Point3d> pointsForDisplay;
+        private List<int> facesIndexesForDisplay;
+        private bool switchVisualise;
 
         /// <summary>
         /// Each implementation of GH_Component must provide a public 
@@ -35,6 +32,9 @@ namespace CustomOffset
             "Offset multiple planar Surfaces given multiple fixed amounts",
             "Surface", "Util")
         {
+            pointsForDisplay = new List<Point3d>();
+            facesIndexesForDisplay = new List<int>();
+            switchVisualise = false;
         }
 
         /// <summary>
@@ -44,6 +44,8 @@ namespace CustomOffset
         {
             pManager.AddBrepParameter("Brep", "B", "The Brep which faces need to be offset.", GH_ParamAccess.item);
             pManager.AddNumberParameter("Offsets", "O", "Offsets as a list. Shorter list will repeat last number.", GH_ParamAccess.list);
+            pManager.AddBooleanParameter("Visualise", "V", "A switch for face index visualisation.", GH_ParamAccess.item);
+            pManager[2].Optional = true;
         }
 
         /// <summary>
@@ -61,7 +63,11 @@ namespace CustomOffset
         /// to store data in output parameters.</param>
         protected override void SolveInstance(IGH_DataAccess DA)
         {
-            Debug.WriteLine("Hello World!");
+            DA.GetData(2, ref switchVisualise);
+
+            // Reset the display Lists
+            pointsForDisplay.Clear();
+            facesIndexesForDisplay.Clear();
 
             Brep brep = null;
 
@@ -77,7 +83,13 @@ namespace CustomOffset
 
             Brep[] output = Offset(brep, facesOffsetDictionary, 0.1);
 
-            DA.SetData(0, output[0]);
+            if (output == null)
+            {
+                this.AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Some of the offset Faces do not have a closed Envelope.");
+                return;
+            }
+            else
+                DA.SetData(0, output[0]);
         }
 
         /// <summary>
@@ -100,10 +112,8 @@ namespace CustomOffset
         /// that use the old ID will partially fail during loading.
         /// </summary>
         public override Guid ComponentGuid => new Guid("dc359d87-d785-4345-8ebc-e2738494ae73");
-        //"A5FBC9D5-6198-44E7-8B12-42AADF320EE1");
 
-        // main operation
-
+        #region Main Operation
         public Dictionary<BrepFace, double> GetFacesOffsetDictionary(Brep buildingBody, List<double> offsets)
         {
             Dictionary<BrepFace, double> d = new Dictionary<BrepFace, double>();
@@ -130,6 +140,9 @@ namespace CustomOffset
             // Populate for each edge for each face the offset Vector
             foreach (BrepFace face in facesOffsetDictionary.Keys)
             {
+                pointsForDisplay.Add(face.GetBoundingBox(false).Center);
+                facesIndexesForDisplay.Add(face.FaceIndex);
+
                 int[] edgesIndex = face.AdjacentEdges();
                 List<BrepEdge> surroundingEdges = buildingBody.Edges.Where(e => edgesIndex.Contains(e.EdgeIndex)).ToList();
 
@@ -223,8 +236,10 @@ namespace CustomOffset
 
                     Curve curve = brepEdge.DuplicateCurve();
 
-                    curve.Transform(Transform.Scale(curve.PointAtStart, (curve.GetLength() + endScalingFactor2) / curve.GetLength()));
-                    curve.Transform(Transform.Scale(curve.PointAtEnd, (curve.GetLength() + startScalingFactor2) / curve.GetLength()));
+                    if (!curve.Transform(Transform.Scale(curve.PointAtStart, (curve.GetLength() + endScalingFactor2) / curve.GetLength())))
+                        return null;
+                    if (!curve.Transform(Transform.Scale(curve.PointAtEnd, (curve.GetLength() + startScalingFactor2) / curve.GetLength())))
+                        return null;
 
                     Vector3d offsetVector1 = face.NormalAt(0.5, 0.5);
                     offsetVector1.Unitize();
@@ -235,8 +250,15 @@ namespace CustomOffset
 
                     edgesToBeStretched.Add(curve);
                 }
-                //CRASH when strecthing is less then the lenght of the adjacent face (Miro))
-                Brep reconstructedFace = Brep.CreatePlanarBreps(edgesToBeStretched, 0.1)[0];
+
+                Brep[] breps = Brep.CreatePlanarBreps(edgesToBeStretched, 0.1);
+                if (breps == null || breps.Length == 0)
+                {
+                    RhinoApp.WriteLine("Failed to create a planar Brep.");
+                    return null;
+                }
+
+                Brep reconstructedFace = breps[0];
 
                 offsetFaces.Add(reconstructedFace);
             }
@@ -403,5 +425,27 @@ namespace CustomOffset
 
             return faceVertexAngles;
         }
+
+        #endregion
+
+        #region Visualisation
+        public override void DrawViewportMeshes(IGH_PreviewArgs args)
+        {
+            if (switchVisualise)
+                for (int i = 0; i < pointsForDisplay.Count; i++)
+                {
+                    Plane plane;
+                    args.Viewport.GetCameraFrame(out plane);
+                    plane.Origin = pointsForDisplay[i];
+
+                    double pixelsPerUnit;
+                    args.Viewport.GetWorldToScreenScale(pointsForDisplay[i], out pixelsPerUnit);
+                    args.Display.Draw3dText(facesIndexesForDisplay[i].ToString(), System.Drawing.Color.Black, plane, 25 / pixelsPerUnit, "Lucida Console", false, false, TextHorizontalAlignment.Center, TextVerticalAlignment.Middle);
+                }
+
+            //base.DrawViewportMeshes(args);
+        }
+
+        #endregion
     }
 }
